@@ -3,7 +3,11 @@
 
 
 
-**MBEUBEU** is a cross-platform, modular, and stealthy Command & Control (C2) framework developed for red team operations and adversary emulation. Written in **Go**, it is designed for flexibility, evasion, and practical real-world offensive security simulations.
+**MBEUBEU** is a flexible and stealthy open-source Command and Control (C2) framework designed for modern red team operations and adversary simulation. It supports multiple agent types, including Windows and Linux, and integrates advanced features for post-exploitation, evasion, and operator collaboration.
+
+**MBEUBEU** is fully written in Go (Golang), making it cross-platform. The project is open to contributions from anyone who wants to help make it more powerful and adaptable.
+While **MBEUBEU** is not yet feature-complete and doesn't aim to compete directly with other C2 frameworks, it is continuously evolving over time with community input and real-world red teaming needs in mind.
+
 
 > ⚠️ **DISCLAIMER:** This tool is intended for **educational** purposes and **authorized** penetration testing only. Any misuse is strictly prohibited and not the responsibility of the developer.
 
