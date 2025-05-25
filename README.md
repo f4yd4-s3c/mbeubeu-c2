@@ -60,6 +60,16 @@ While **MBEUBEU** is not yet feature-complete and doesn't aim to compete directl
 
 ## ⚙️ Getting Started
 
+**Requirements**
+  - Go version ≥ 1.23.0
+
+**Tested on**
+  - Ubuntu 25.04 / 24.04
+  - Kali Linux
+  - WSL (Windows Subsystem for Linux)
+  - Parrot OS
+
+## 🧪 Installation Steps
 1. **Clone the repo**
    ```bash
    git clone https://github.com/f4yd4-s3c/mbeubeu-c2.git
