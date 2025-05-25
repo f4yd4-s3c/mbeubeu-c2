@@ -15,6 +15,7 @@ echo -e "${BLUE}[i] Using config file: ${YELLOW}$CONFIG_FILE${NC}"
 echo -e "${YELLOW}[+] Installing packer...${NC}"
 sudo apt update -y
 sudo apt install -y upx-ucl
+chmod +x src/garble/garble
 
 # Install Python and pip
 echo -e "${YELLOW}[+] Installing Python and pip...${NC}"
