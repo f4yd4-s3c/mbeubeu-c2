@@ -46,6 +46,7 @@ if [ "$INSTALL_GO" = true ]; then
     GO_URL="https://go.dev/dl/${GO_ARCHIVE}"
 
     echo -e "${YELLOW}[+] Installing Go ${GO_VERSION}...${NC}"
+    sudo rm $(which go)
     cd /tmp
     wget -q --show-progress ${GO_URL}
     sudo rm -rf /usr/local/go
@@ -70,7 +71,6 @@ fi
 echo -e "${BLUE}[i] Verifying Go installation...${NC}"
 go version
 echo -e "${BLUE}[i] Romoving Go old Version...${NC}"
-sudo rm /usr/bin/go
 
 if [ -f "go.mod" ]; then
     echo -e "${YELLOW}[+] Tidying Go modules...${NC}"
