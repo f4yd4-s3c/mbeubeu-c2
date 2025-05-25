@@ -64,6 +64,13 @@ fi
 echo -e "${BLUE}[i] Verifying Go installation...${NC}"
 go version
 
+cd src/garble
+
+echo -e "${BLUE}[i] Building Garble...${NC}"
+go build .
+
+cd "$cdirect"
+
 # Tidy Go modules
 if [ -f "go.mod" ]; then
     echo -e "${YELLOW}[+] Tidying Go modules...${NC}"
