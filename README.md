@@ -29,6 +29,7 @@ While **MBEUBEU** is not yet feature-complete and doesn't aim to compete directl
 - 🛡️ **Defence Analysis**
 - ⏳ **Smart Sleep and Jitter Delays**
 - 💻 **Command Execution** (Shell, PowerShell)
+- 🌀 Powershell Import (pwsh-import, pwsh-execute) To import and execute .ps1
 - 🖼️ **Stealth Screenshot Capture** (Window-based)
 - 📁 **File Transfer System** (Upload/Download)
 - 🔒 **Credential Dumping** with Mimikatz & SharpKatz
