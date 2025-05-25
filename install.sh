@@ -57,7 +57,12 @@ if [ "$INSTALL_GO" = true ]; then
         echo 'export PATH=$PATH:/usr/local/go/bin' >> "$CONFIG_FILE"
     fi
     export PATH=$PATH:/usr/local/go/bin
-    source $SHELL_NAME
+    if [[ "$SHELL" == *"bash" ]]; then
+        source ~/.bashrc
+    elif [[ "$SHELL" == *"zsh" ]]; then
+        source ~/.zshrc
+    fi
+
     cd "$cdirect"
 fi
 
