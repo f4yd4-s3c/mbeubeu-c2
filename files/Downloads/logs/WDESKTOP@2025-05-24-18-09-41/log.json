@@ -1,0 +1,27 @@
+[
+  {
+    "time": "2025-05-24T18:11:59.19186296Z",
+    "type": "command",
+    "data": {
+      "command": "pwd",
+      "id": "b25722ee-be82-4a01-902a-847916dd0338",
+      "status": "pending",
+      "timestamp": "2025-05-24T18:11:59.191837401Z"
+    }
+  },
+  {
+    "time": "2025-05-24T18:11:59.545821218Z",
+    "type": "output",
+    "data": "C:\\Users\\p4p4 \n"
+  },
+  {
+    "time": "2025-05-24T18:12:04.863036689Z",
+    "type": "command",
+    "data": {
+      "id": "98d7c40c-66f2-4e6c-9a9a-cbcf38f41055",
+      "command": "kill -y",
+      "timestamp": "2025-05-24T18:12:04.863009957Z",
+      "status": "pending"
+    }
+  }
+]

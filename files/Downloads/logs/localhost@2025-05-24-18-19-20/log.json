@@ -1,0 +1,57 @@
+[
+  {
+    "time": "2025-05-24T18:19:33.656670532Z",
+    "type": "command",
+    "data": {
+      "command": "pwd",
+      "id": "09abb9f5-4c8a-4c16-80c0-80a6e9debac4",
+      "status": "pending",
+      "timestamp": "2025-05-24T18:19:33.656619579Z"
+    }
+  },
+  {
+    "time": "2025-05-24T18:19:35.647626568Z",
+    "type": "output",
+    "data": "/home/p4p4/Desktop/mb/mbeubeu-c2 \n"
+  },
+  {
+    "time": "2025-05-24T18:19:36.920046009Z",
+    "type": "command",
+    "data": {
+      "command": "ls .",
+      "id": "f9540567-5223-4bbe-9646-afcab623592d",
+      "status": "pending",
+      "timestamp": "2025-05-24T18:19:36.91999011Z"
+    }
+  },
+  {
+    "time": "2025-05-24T18:19:40.654824764Z",
+    "type": "output",
+    "data": ".config \nREADME.md \nclient \nconfig \nfiles \ngo.mod \ngo.sum \nlinux-agent.go.back \nmbeubeu-client \nmbeubeu-teamserver \npayloads \nprofiles \nserver \nsrc \ntest.elf \n"
+  },
+  {
+    "time": "2025-05-24T18:19:44.824443419Z",
+    "type": "command",
+    "data": {
+      "command": "shell hostname",
+      "id": "2142f568-d4f3-42da-ae5d-e7da7d3a9712",
+      "status": "pending",
+      "timestamp": "2025-05-24T18:19:44.824398666Z"
+    }
+  },
+  {
+    "time": "2025-05-24T18:19:45.704679421Z",
+    "type": "output",
+    "data": "localhost\n"
+  },
+  {
+    "time": "2025-05-24T18:19:53.64785151Z",
+    "type": "command",
+    "data": {
+      "id": "c1ff8119-e905-4db6-9798-d3164a5dee2d",
+      "command": "kill -y",
+      "timestamp": "2025-05-24T18:19:53.647825164Z",
+      "status": "pending"
+    }
+  }
+]

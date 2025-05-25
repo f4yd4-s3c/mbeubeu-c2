@@ -1,0 +1,183 @@
+Remote Desktop Connection
+Command Prompt
+Rufus
+LastPass Vault
+Coffre-fort LastPass
+Archivio LastPass
+خزنة لاست باس
+Bóveda de LastPass
+LastPass-Tresor
+Dashlane Password Manager
+Gestionnaire de mots de passe Dashlane
+Gestore password Dashlane
+مدير كلمات المرور داشلين
+Administrador de contraseñas Dashlane
+Dashlane-Passwortmanager
+KeePass Database
+Base de données KeePass
+Database KeePass
+قاعدة بيانات كي باس
+Base de datos KeePass
+KeePass-Datenbank
+1Password Unlock
+Déverrouillage 1Password
+Sblocco 1Password
+فتح 1Password
+Desbloqueo de 1Password
+1Password entsperren
+Bitwarden
+Bitwarden
+Bitwarden
+بيتوردن
+Bitwarden
+Bitwarden
+Chrome Saved Passwords
+Mots de passe enregistrés Chrome
+Password salvate su Chrome
+كلمات المرور المحفوظة في كروم
+Contraseñas guardadas de Chrome
+Gespeicherte Passwörter Chrome
+Firefox Logins and Passwords
+Identifiants et mots de passe Firefox
+Accessi e password Firefox
+تسجيلات الدخول وكلمات مرور فايرفوكس
+Inicios de sesión y contraseñas Firefox
+Firefox-Anmeldungen und Passwörter
+Windows Credential Manager
+Gestionnaire d’informations d’identification Windows
+Gestione credenziali Windows
+مدير بيانات الاعتماد ويندوز
+Administrador de credenciales de Windows
+Windows-Anmeldeinformationsverwaltung
+GPG Keychain Access
+Accès à la chaîne de clés GPG
+Accesso alla catena di chiavi GPG
+الوصول إلى سلسلة مفاتيح GPG
+Acceso al llavero GPG
+Zugriff auf GPG-Schlüsselbund
+PayPal - Log In
+Connexion PayPal
+Accesso PayPal
+تسجيل الدخول إلى باي بال
+Inicio de sesión en PayPal
+PayPal-Anmeldung
+Coinbase
+Coinbase
+Coinbase
+كوين بيس
+Coinbase
+Coinbase
+Binance
+Binance
+Binance
+بينانس
+Binance
+Binance
+Visa Checkout
+Visa Checkout
+Visa Checkout
+فيزا تشيك آوت
+Visa Checkout
+Visa Checkout
+Mastercard SecureCode
+Code Sécurisé Mastercard
+Codice Sicuro Mastercard
+رمز الأمان ماستركارد
+Código Seguro Mastercard
+Mastercard SecureCode
+Revolut - Banking
+Revolut - Banque
+Revolut - Banca
+ريفولت - بنك
+Revolut - Banco
+Revolut - Bankwesen
+TurboTax
+TurboImpôt
+TurboTasse
+توربو تاكس
+TurboImpuestos
+TurboSteuer
+QuickBooks
+QuickBooks
+QuickBooks
+كويك بوكس
+QuickBooks
+QuickBooks
+Cisco AnyConnect
+Cisco AnyConnect
+Cisco AnyConnect
+سيسكو أني كونكت
+Cisco AnyConnect
+Cisco AnyConnect
+FortiClient VPN
+FortiClient VPN
+FortiClient VPN
+فورتي كلاينت VPN
+FortiClient VPN
+FortiClient VPN
+OpenVPN Connect
+OpenVPN Connect
+OpenVPN Connect
+أوبن في بي إن كونكت
+OpenVPN Connect
+OpenVPN Connect
+Microsoft Azure AD
+Azure AD Microsoft
+Azure AD di Microsoft
+أزور آي دي مايكروسوفت
+Microsoft Azure AD
+Microsoft Azure AD
+Okta Verify
+Okta Vérification
+Okta Verifica
+أوكتا التحقق
+Okta Verificación
+Okta-Überprüfung
+Duo Authentication
+Authentification Duo
+Autenticazione Duo
+مصادقة ديو
+Autenticación Duo
+Duo-Authentifizierung
+Citrix Workspace
+Espace de travail Citrix
+Spazio di lavoro Citrix
+مساحة عمل سيتريكس
+Espacio de trabajo Citrix
+Citrix-Arbeitsbereich
+VMware Horizon
+VMware Horizon
+VMware Horizon
+في إم وير هورايزن
+VMware Horizon
+VMware Horizon
+Windows Security
+Sécurité Windows
+Sicurezza di Windows
+أمان ويندوز
+Seguridad de Windows
+Windows-Sicherheit
+Enter your credentials
+Entrez vos identifiants
+Inserisci le credenziali
+أدخل بيانات الاعتماد الخاصة بك
+Introduce tus credenciales
+Geben Sie Ihre Zugangsdaten ein
+Unlock keyring
+Déverrouiller le trousseau
+Sblocca portachiavi
+إلغاء قفل سلسلة المفاتيح
+Desbloquear llavero
+Schlüsselbund entsperren
+Security Device
+Périphérique de sécurité
+Dispositivo di sicurezza
+جهاز أمان
+Dispositivo de seguridad
+Sicherheitsgerät
+Smart Card PIN
+Code PIN de la carte à puce
+PIN della Smart Card
+رمز بطاقة ذكية
+PIN de tarjeta inteligente
+Smartcard-PIN

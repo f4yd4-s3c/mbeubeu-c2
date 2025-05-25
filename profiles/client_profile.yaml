@@ -1,0 +1,89 @@
+encryption_key: "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF" # Change me pleas generate randome key using files/tools/random_key.py 
+
+user_agent: "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko"  
+
+headers:
+  Accept: "text/html, application/xhtml+xml, */*"
+  Accept-Encoding: "gzip, deflate"
+  Accept-Language: "en-US,en;q=0.5"
+  Cache-Control: "no-cache"
+  Connection: "Keep-Alive"
+  DNT: "1"
+  Referer: "https://www.bing.com/"
+  Upgrade-Insecure-Requests: "1"
+
+
+protocols:  
+  http:  
+    enabled: false  
+    url: "192.168.1.52:80"  
+    endpoints:  
+      login: "/users.php" # change me  
+      checkin: "/index.php"  # change me
+      tasks: "/logout"  # change me
+      output: "/users"  # change me
+      agents: "/register"  # change me
+      listener_generate: "/manage/listener/generate"  
+      listener_start: "/manage/listener/start"  
+      listener_stop: "/manage/listener/stop"  
+      listener_show: "/manage/listener/show"  
+      listener_delete: "/manage/listener/delete"  
+      kill_date: "2050-12-12"  # change me
+      checkin_attempts: 200  # change me
+      ostho: "/wikipedia/"  # change me dont forget '/'
+      stagern: "update"   # change me
+      stagerd: "/docs/"  # change me dont forget '/'
+      u_exfil: "/uploads/"  
+      u_sc: "/uploadsc/"  
+      upload_token: "SuperSecretToken123!"   # change me
+      proc_to_inject: "C:\\\\Windows\\\\System32\\\\cmd.exe" # Please make sure to know what you do  !
+      url_to_redirect: "https://en.wikipedia.org/wiki/Main_Page" # Change me this url to redirect when no authorized try to access
+      user_agent: "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko" # change me please  
+
+  https:  
+    enabled: false  
+    url: "192.168.1.52:443"  
+    endpoints:  
+      listener_generate: "/manage/listener/generate"  
+      listener_start: "/manage/listener/start"  
+      listener_stop: "/manage/listener/stop"  
+      listener_show: "/manage/listener/show"  
+      listener_delete: "/manage/listener/delete"  
+    cert: "config/certs/cert.pem"  
+    key: "config/certs/key.pem"  
+
+  quic:
+    enabled: false
+    url: "192.168.1.52:433" # Dont worry about the same port as https, QUIC use UDP Trans 
+    endpoints:
+      listener_generate: "/quic/listener/generate"
+      listener_start: "/quic/listener/start"
+      listener_stop: "/quic/listener/stop"
+      listener_show: "/quic/listener/show"
+      listener_delete: "/quic/listener/delete"
+    cert: "config/certs/cert.pem"
+    key: "config/certs/key.pem"
+
+ # coming soon for Iot ;)
+  coap:  
+    enabled: false  
+    url: "192.168.1.52:5683"  
+    endpoints:  
+      listener_generate: "/coap/listener/generate"  
+      listener_start: "/coap/listener/start"  
+      listener_stop: "/coap/listener/stop"  
+      listener_show: "/coap/listener/show"  
+      listener_delete: "/coap/listener/delete"  
+    dtls_cert: "config/certs/coap_cert.pem"  
+    dtls_key: "config/certs/coap_key.pem"  
+
+payloads:  
+  output_path: "./payloads"  
+  languages:  
+    - "go"  
+    - "csharp"  
+    - "py"  
+    - "ps"  
+    - "c"  
+    - "cpp"  
+

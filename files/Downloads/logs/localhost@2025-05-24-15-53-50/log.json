@@ -1,0 +1,27 @@
+[
+  {
+    "time": "2025-05-24T15:54:00.778813824Z",
+    "type": "command",
+    "data": {
+      "command": "pwd",
+      "id": "4bcbbaae-18ad-4d8f-85a0-632a3d7952f1",
+      "status": "pending",
+      "timestamp": "2025-05-24T15:54:00.778789438Z"
+    }
+  },
+  {
+    "time": "2025-05-24T15:54:05.408229248Z",
+    "type": "output",
+    "data": "/home/p4p4/Desktop/mb/mbeubeu-c2 \n"
+  },
+  {
+    "time": "2025-05-24T15:54:08.130692432Z",
+    "type": "command",
+    "data": {
+      "id": "eceec640-6c0b-4c9f-8a38-471919c4d30c",
+      "command": "kill -y",
+      "timestamp": "2025-05-24T15:54:08.130669078Z",
+      "status": "pending"
+    }
+  }
+]
