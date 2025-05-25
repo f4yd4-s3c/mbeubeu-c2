@@ -69,6 +69,8 @@ fi
 # Verify Go installation
 echo -e "${BLUE}[i] Verifying Go installation...${NC}"
 go version
+echo -e "${BLUE}[i] Romoving Go old Version...${NC}"
+sudo rm /usr/bin/go
 
 if [ -f "go.mod" ]; then
     echo -e "${YELLOW}[+] Tidying Go modules...${NC}"
