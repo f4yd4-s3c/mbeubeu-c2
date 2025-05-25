@@ -57,6 +57,7 @@ if [ "$INSTALL_GO" = true ]; then
         echo 'export PATH=$PATH:/usr/local/go/bin' >> "$CONFIG_FILE"
     fi
     export PATH=$PATH:/usr/local/go/bin
+    source $SHELL_NAME
     cd "$cdirect"
 fi
 
