@@ -62,7 +62,7 @@ While **MBEUBEU** is not yet feature-complete and doesn't aim to compete directl
 
 **Requirements**
   - Go version ≥ 1.23.0
-   **If your Go version is less than 1.23, it will be removed using sudo rm $(which go)**
+    **If your Go version is less than 1.23, it will be removed using sudo rm $(which go)**
 
 **Tested on**
   - Ubuntu 25.04 / 24.04
