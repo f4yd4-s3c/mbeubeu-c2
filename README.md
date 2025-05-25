@@ -85,9 +85,9 @@ Contributions, issues, and pull requests are welcome! Feel free to fork, modify,
 
 [paypal](https://paypal.me/f4yd4s3c)
 
-## 📢 Solidarity 
- - 📢 I stand with the people of Gaza.  
- - 📢 Please don’t forget to help Gaza victims. 🕊️ [Donate via UNICEF Gaza Victims  ](https://www.unicef.org/emergencies/children-gaza-need-lifesaving-support)
+## 🇵🇸 Solidarity 
+ -  I stand with the people of Gaza.  
+ -  Please don’t forget to help Gaza victims. 🕊️ [Donate via UNICEF Gaza Victims  ](https://www.unicef.org/emergencies/children-gaza-need-lifesaving-support)
 
 
 ## follow me on :
