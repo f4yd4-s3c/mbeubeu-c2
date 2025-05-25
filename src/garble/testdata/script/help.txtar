@@ -1,0 +1,108 @@
+! exec garble
+stderr 'Garble obfuscates Go code'
+stderr 'garble \[garble flags\] command'
+! stderr 'usage: go build'
+! stdout .
+
+exec garble -h
+stderr 'Garble obfuscates Go code'
+stderr 'garble \[garble flags\] command'
+! stdout .
+
+exec garble help
+stderr 'Garble obfuscates Go code'
+stderr 'garble \[garble flags\] command'
+! stdout .
+
+exec garble help foo bar
+stderr 'usage: garble help'
+! stderr 'Garble obfuscates Go code'
+! stdout .
+
+exec garble help -h
+stderr 'usage: garble help'
+! stdout .
+
+! exec garble build -h
+stderr 'garble \[garble flags\] build'
+stderr 'This command wraps "go build"'
+stderr 'usage: go build'
+stderr 'Run .go help build.'
+! stderr 'Garble obfuscates Go code'
+! stdout .
+
+! exec garble test -h
+stderr 'garble \[garble flags\] test'
+stderr 'This command wraps "go test"'
+stderr 'usage: go test'
+stderr 'Run .go help test.'
+! stderr 'Garble obfuscates Go code'
+! stdout .
+
+! exec garble reverse -h
+stderr 'garble \[garble flags\] reverse \[build flags\] package \[files\]'
+! stderr 'usage: go '
+! stdout .
+
+! exec garble help reverse
+stderr 'garble \[garble flags\] reverse \[build flags\] package \[files\]'
+! stderr 'usage: go '
+! stdout .
+
+! exec garble -badflag
+stderr 'flag provided but not defined'
+stderr 'garble \[garble flags\] command'
+! stdout .
+
+! exec garble badcmd
+stderr 'unknown command'
+
+! exec garble build -badflag
+stderr 'usage: go build' # TODO: is this confusing?
+! stdout .
+
+! exec garble build -tiny
+stderr 'must precede command, like: garble -tiny build \./pkg'
+! stdout .
+
+! exec garble build -literals
+stderr 'must precede command, like: garble -literals build \./pkg'
+! stdout .
+
+! exec garble build -seed=random
+stderr 'must precede command, like: garble -seed=random build \./pkg'
+! stdout .
+
+[!windows] ! exec garble toolexec /does/not/exist/compile
+[windows] ! exec garble toolexec C:\does\not\exist\compile
+stderr 'did you run.*instead of "garble \[command\]"'
+
+! exec garble build badpackage
+stderr 'package badpackage is not in std'
+! stdout .
+
+! exec garble build ./badpackage
+stderr 'directory not found'
+! stdout .
+
+# Test the version command. Note that test binaries exclude VCS build info,
+# and we reuse the test binary for garble itself, so that's missing.
+exec garble version
+stdout -count=1 'mvdan.cc/garble \(devel\)'
+stdout -count=1 'Build settings'
+stdout -count=3 '-compiler|GOOS|GOARCH'
+! stdout 'vcs'
+
+! exec garble version -flag
+stderr 'usage: garble version'
+
+! exec garble version arg
+stderr 'usage: garble version'
+
+# We need a dummy module for "garble build -badflag".
+-- go.mod --
+module dummy
+
+go 1.23
+-- dummy.go --
+package dummy

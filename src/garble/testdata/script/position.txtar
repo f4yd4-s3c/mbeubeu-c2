@@ -1,0 +1,121 @@
+exec garble build
+exec ./main
+! stdout 'garble_main\.go|garble_other_filename|is sorted'
+
+! binsubstr main$exe 'garble_main.go' 'garble_other_filename'
+
+[short] stop # no need to verify this with -short
+
+go build
+exec ./main
+stdout 'garble_main.go'
+stdout 'garble_other_filename'
+stdout ':19: main'
+stdout 'initPositions is sorted'
+stdout 'varPositions is sorted'
+-- go.mod --
+module test/main
+
+go 1.23
+-- garble_main.go --
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"sort"
+)
+
+var _, globalFile, globalLine, _ = runtime.Caller(0)
+
+func init() {
+	_, file, line, _ := runtime.Caller(0)
+	fmt.Printf("%s:%d: init\n", file, line)
+}
+
+func main() {
+	fmt.Printf("%s:%d: global\n", globalFile, globalLine)
+
+	_, file, line, _ := runtime.Caller(0)
+	fmt.Printf("%s:%d: main\n", file, line)
+
+	funcDecl()
+	funcVar()
+
+	// initPositions is filled by ten consecutive funcs.
+	// If we are not shuffling or obfuscating line numbers,
+	// this list will be sorted.
+	// If we are, it's extremely unlikely it would remain sorted.
+	if sort.IsSorted(sort.StringSlice(initPositions)) {
+		fmt.Println("initPositions is sorted")
+	}
+
+	// Same as the above, but with vars.
+	if sort.IsSorted(sort.StringSlice(varPositions)) {
+		fmt.Println("varPositions is sorted")
+	}
+
+	// Adding "/*text*/" comments here is tricky,
+	// as we don't want to turn "a/b" into "a//*text*/b".
+	// We need "a/ /*text*/b" to preserve the syntax.
+	// The nested expression is needed to prevent spaces.
+	fmt.Printf("%v\n", 10*float64(3.0)/float64(4.0))
+}
+
+// Replacing `s` and `f` with obfuscated names triggered a bug in go/printer,
+// where it would move `.f` after the comment, breaking the syntax.
+func issue_573(s struct{ f int }) {
+	var _ *int = &s.f
+	/*x*/
+}
+-- garble_other_filename.go --
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func funcDecl() {
+	_, file, line, _ := runtime.Caller(0)
+	fmt.Printf("%s:%d: func\n", file, line)
+}
+
+var funcVar = func() {
+	_, file, line, _ := runtime.Caller(0)
+	fmt.Printf("%s:%d: func var\n", file, line)
+}
+
+var initPositions []string
+
+func curPos() string {
+	_, file, line, _ := runtime.Caller(1)
+	return fmt.Sprintf("%s:%d", file, line)
+}
+
+func init() { initPositions = append(initPositions, curPos()) }
+func init() { initPositions = append(initPositions, curPos()) }
+func init() { initPositions = append(initPositions, curPos()) }
+func init() { initPositions = append(initPositions, curPos()) }
+func init() { initPositions = append(initPositions, curPos()) }
+func init() { initPositions = append(initPositions, curPos()) }
+func init() { initPositions = append(initPositions, curPos()) }
+func init() { initPositions = append(initPositions, curPos()) }
+func init() { initPositions = append(initPositions, curPos()) }
+func init() { initPositions = append(initPositions, curPos()) }
+
+var varLine0 = curPos()
+var varLine1 = curPos()
+var varLine2 = curPos()
+var varLine3 = curPos()
+var varLine4 = curPos()
+var varLine5 = curPos()
+var varLine6 = curPos()
+var varLine7 = curPos()
+var varLine8 = curPos()
+var varLine9 = curPos()
+
+var varPositions = []string{
+	varLine0, varLine1, varLine2, varLine3, varLine4,
+	varLine5, varLine6, varLine7, varLine8, varLine9,
+}

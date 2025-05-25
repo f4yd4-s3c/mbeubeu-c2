@@ -1,0 +1,76 @@
+# Check that the simplest use of garble works. Note the lack of a module or GOGARBLE.
+exec garble build -o=main$exe garble_main.go
+exec ./main
+cmp stderr main.stderr
+
+# Ensure that -w and -s worked.
+[!windows] [exec:readelf] exec readelf --section-headers main$exe
+[!windows] [exec:readelf] ! stdout 'debug_info'
+[!windows] [exec:readelf] ! stdout '\.symtab'
+
+# The buildid needs to be missing from the binary. Otherwise, we leak
+# information unnecessarily, which is made worse by how we use part of said
+# buildid to obfuscate the main package.
+[!windows] [exec:readelf] ! stdout 'buildid'
+go tool buildid main$exe
+! stdout .
+
+# The build version needs to be missing too.
+go version main$exe
+stdout 'unknown'
+! stdout 'go1'
+! stdout 'devel'
+! stdout $gofullversion
+
+# The binary can't contain the version string either.
+! binsubstr main$exe ${WORK} 'garble_main.go' 'globalVar' 'globalFunc' 'garble' $gofullversion
+
+[short] stop # checking that the build is reproducible is slow
+
+# Check that we fail if the user used "go build -toolexec garble" instead of "garble build"
+! go build -toolexec=garble -o=main$exe garble_main.go
+stderr '^did you run.*instead of "garble \[command\]"'
+! go build -toolexec='garble toolexec' -o=main$exe garble_main.go
+stderr 'cannot open shared file.*did you run.*instead of "garble \[command\]"'
+
+# Also check that the binary is reproducible.
+# No packages should be rebuilt either, thanks to the build cache.
+cp main$exe main_old$exe
+rm main$exe
+exec garble build -v -o=main$exe garble_main.go
+! stderr .
+bincmp main$exe main_old$exe
+
+# Check that the program works as expected without garble. No need to verify
+# this when we run with -short.
+go build -o=main$exe garble_main.go
+exec ./main
+cmp stderr main.stderr
+
+# The default build includes DWARF and the symbol table.
+[!windows] [exec:readelf] exec readelf --section-headers main$exe
+[!windows] [exec:readelf] stdout 'debug_info'
+[!windows] [exec:readelf] stdout '\.symtab'
+
+# The default build includes full non-trimmed paths, as well as our names.
+# Only check $WORK on non-windows, because it's difficult to do it there.
+binsubstr main$exe 'garble_main.go' 'globalVar' 'globalFunc' $gofullversion
+[!windows] binsubstr main$exe ${WORK}
+-- go.mod --
+module test/mainfoo
+
+go 1.23
+-- garble_main.go --
+package main
+
+var globalVar = "global value"
+
+func globalFunc() { println("global func body") }
+
+func main() {
+	println(globalVar)
+	globalFunc()
+}
+-- main.stderr --
+global value
+global func body

@@ -1,0 +1,36 @@
+[exec:git] exec git init -q
+[exec:git] exec git config user.name "name"
+[exec:git] exec git config user.email "name@email.local"
+[exec:git] exec git add go.mod main.go
+[exec:git] exec git commit -q -m 'very unique commit message'
+[exec:git] exec git rev-parse HEAD
+[exec:git] setenvfile HEAD_COMMIT_SHA stdout
+
+exec garble build -tags veryuniquebuildtag
+
+go version -m main$exe
+stdout 'main(\.exe)?: unknown'
+stdout -count=1 '^.+$' # expect just one line
+
+! binsubstr main$exe '(devel)' 'v0.0.0-202' 'veryuniquebuildtag' ${HEAD_COMMIT_SHA}
+
+[short] stop # no need to verify this with -short
+
+go build -tags veryuniquebuildtag
+
+go version -m main$exe
+stdout 'path\s*test/main'
+[go1.24] stdout 'mod\s*test/main\s*v0\.0\.0-202\d'
+stdout 'build\s*-tags=veryuniquebuildtag'
+stdout 'build\s*vcs.revision='${HEAD_COMMIT_SHA}
+
+binsubstr main$exe 'veryuniquebuildtag' ${HEAD_COMMIT_SHA}
+[go1.24] binsubstr main$exe 'v0.0.0-202'
+-- go.mod --
+module test/main
+
+go 1.23
+-- main.go --
+package main
+
+func main() { println("hello world") }

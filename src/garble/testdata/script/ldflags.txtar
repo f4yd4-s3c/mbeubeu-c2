@@ -1,0 +1,73 @@
+# Note the proper domain, since the dot adds an edge case.
+#
+# Also note that there are three forms of -X allowed:
+#
+#   -X=name=value
+#   -X name=value
+#   -X "name=value" (or with single quotes, allows spaces in value)
+env LDFLAGS='-X=main.unexportedVersion=v1.22.33 -X=main.replacedWithEmpty= -X "main.replacedWithSpaces= foo bar " -X=domain.test/main/imported.ExportedUnset=garble_replaced -X=domain.test/missing/path.missingVar=value -X=main.someType=notAVariable'
+
+exec garble build -ldflags=${LDFLAGS}
+exec ./main
+cmp stdout main.stdout
+! binsubstr main$exe 'domain.test/main' 'unexportedVersion' 'ExportedUnset'
+
+[short] stop # no need to verify this with -short
+
+exec garble -tiny -literals -seed=0002deadbeef build -ldflags=${LDFLAGS}
+exec ./main
+cmp stdout main.stdout
+! binsubstr main$exe 'unexportedVersion' 'ExportedUnset'
+binsubstr main$exe 'v1.22.33' 'garble_replaced' # TODO: obfuscate injected strings too
+binsubstr main$exe 'kept_before' 'kept_after' # TODO: obfuscate strings near ldflags vars
+
+go build -ldflags=${LDFLAGS}
+exec ./main
+cmp stdout main.stdout
+binsubstr main$exe 'unexportedVersion' 'ExportedUnset' 'v1.22.33' 'garble_replaced'
+-- go.mod --
+module domain.test/main
+
+go 1.23
+-- main.go --
+package main
+
+import (
+	"fmt"
+
+	"domain.test/main/imported"
+)
+
+var unexportedVersion = "unknown"
+
+var notReplacedBefore, replacedWithEmpty, notReplacedAfter = "kept_before", "original", "kept_after"
+
+var replacedWithSpaces = "original"
+
+type someType int
+
+const someConst = "untouchable"
+
+func someFunc() string { return "untouchable" }
+
+func main() {
+	fmt.Printf("version: %q\n", unexportedVersion)
+	fmt.Printf("becomes empty: %q\n", replacedWithEmpty)
+	fmt.Printf("becomes string with spaces: %q\n", replacedWithSpaces)
+	fmt.Printf("should be kept: %q, %q\n", notReplacedBefore, notReplacedAfter)
+	fmt.Printf("no longer unset: %q\n", imported.ExportedUnset)
+}
+-- imported/imported.go --
+package imported
+
+var (
+	ExportedUnset, AnotherUnset string
+
+	otherVar int
+)
+-- main.stdout --
+version: "v1.22.33"
+becomes empty: ""
+becomes string with spaces: " foo bar "
+should be kept: "kept_before", "kept_after"
+no longer unset: "garble_replaced"

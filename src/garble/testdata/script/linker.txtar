@@ -1,0 +1,74 @@
+# This test stopped working on Go 1.23, as linknaming into the runtime
+# is now forbidden since https://go.dev/issue/67401.
+# Perhaps rewrite this test by searching for the pcheader magic number
+# by scanning the binary, like debug/buildinfo/buildinfo.go does in searchMagic.
+skip 'no longer works on Go 1.23'
+
+# Past garble versions might not properly patch cmd/link with "git apply"
+# when running inside a git repository. Skip the extra check with -short.
+[!short] [exec:git] exec git init -q
+[!short] [exec:git] env GARBLE_CACHE=${WORK}/garble-cache
+
+# Any build settings for the main build shouldn't affect building the linker.
+# If this flag makes it through when using build commands on std or cmd,
+# those commands are likely to fail as std and cmd are their own modules.
+env GOFLAGS=-modfile=${WORK}/go.mod
+
+exec garble build
+exec ./main
+! cmp stderr main.stderr
+
+[short] stop # no need to verify this with -short
+
+# The rebuilt linker should use the executable extension for the host GOOS,
+# not the target one. Not doing so might be harmless, but can result in
+# building the linker twice, wasting CPU and disk.
+[!windows] env GOOS=windows
+[windows] env GOOS=linux
+exec garble build
+[!windows] [exec:git]   exists ${GARBLE_CACHE}/tool/link
+[!windows] [exec:git] ! exists ${GARBLE_CACHE}/tool/link.exe
+[windows]  [exec:git] ! exists ${GARBLE_CACHE}/tool/link
+[windows]  [exec:git]   exists ${GARBLE_CACHE}/tool/link.exe
+env GOOS=
+
+# Verify a build without garble.
+go build
+exec ./main
+cmp stderr main.stderr
+
+-- go.mod --
+module test/main
+
+go 1.23
+-- main.go --
+package main
+
+import (
+	"strconv"
+	"strings"
+	_ "unsafe"
+)
+
+type fakeModuleData struct {
+	pcHeader *struct {
+		magic uint32
+	}
+}
+
+//go:linkname activeModules runtime.activeModules
+func activeModules() []*fakeModuleData
+
+// genericMagicValue returns magic value without last digit
+func genericMagicValue() string {
+	mod := activeModules()[0]
+	magicValHex := strings.ToUpper(strconv.FormatUint(uint64(mod.pcHeader.magic), 16))
+	return "0x" + magicValHex[:len(magicValHex)-1] + "?"
+}
+
+func main() {
+	println(genericMagicValue())
+}
+
+-- main.stderr --
+0xFFFFFFF?

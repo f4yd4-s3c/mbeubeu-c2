@@ -1,0 +1,52 @@
+# A fairly average Go build, importing some std libraries.
+# We always build for a foreign GOOS.
+# GOOS=windows, unless the host is also windows; then linux.
+# GOARCH=arm, unless the host is also arm; then amd64.
+# Windows and ARM are both interesting,
+# and it helps with coverage as we mainly test on linux/amd64.
+#
+# We also ensure that intrinsics work as expected.
+# The compiler replaces calls to some functions with intrinsics in its ssa stage,
+# and it recognizes which functions via the package path and func name.
+# If we obfuscate those package paths without adjusting the compiler,
+# intrinsics aren't applied, causing performance loss or build errors.
+# We use the math/bits package, as its Len64 intrinsic is present in both arm
+# and arm64, and it is not part of the runtime nor its dependencies.
+[!windows] env GOOS=windows
+[windows] env GOOS=linux
+[!arm] env GOARCH=arm
+[arm] env GOARCH=arm64
+exec garble build -gcflags=math/bits=-d=ssa/intrinsics/debug=1
+stderr 'intrinsic substitution for Len64.*BitLen64'
+
+# As a last step, also test building for MacOS if we're not already on it.
+# We already cover Windows and Linux above, and MacOS is the other major OS.
+# The way it is implemented in the standard library, in particular with syscalls,
+# is different enough that it sometimes causes special bugs.
+[darwin] stop
+env GOOS=darwin
+env GOARCH=arm64
+exec garble build
+
+-- go.mod --
+module test/main
+
+go 1.23
+-- main.go --
+package main
+
+import "net/http"
+
+func main() {
+	http.ListenAndServe("", nil)
+}
+
+-- 32bit.go --
+//go:build arm
+
+package main
+
+// Will give "out of bounds" if we don't correctly set up types.Config.Sizes.
+const is64bit = ^uint(0) >> 63 // 0 for 32-bit hosts, 1 for 64-bit ones.
+var x [1]struct{}
+var _ = x[is64bit]

@@ -1,0 +1,74 @@
+# Tiny mode
+exec garble -tiny build
+! binsubstr main$exe 'garble_main.go' 'fmt/print.go'
+env GODEBUG='allocfreetrace=1,gcpacertrace=1,gctrace=1,inittrace=1,scavenge=1,scavtrace=1,scheddetail=1,schedtrace=10'
+! exec ./main$exe
+env GODEBUG='' # Ensure further commands don't have weirdness due to GODEBUG.
+stderr '^\(0x[[:xdigit:]]+,0x[[:xdigit:]]+\)' # interfaces/pointers print correctly
+# With -tiny, all line numbers are reset to 1.
+# Unfortunately, line comment directives don't allow erasing line numbers entirely.
+stderr '^caller: \?\? 1$' # position info is removed
+stderr '^recovered: ya like jazz?'
+! stderr '^init runtime'  # GODEBUG prints are hidden, like inittrace=1
+! stderr 'panic: oh noes' # panics are hidden
+stderr 'funcExported false funcUnexported true'
+stderr 'funcStructExported false funcStructUnexported true'
+
+[short] stop # no need to verify this with -short
+
+# Default mode
+exec garble build
+! exec ./main$exe
+stderr '^caller: [[:word:]]+\.go [1-9]'
+stderr '^recovered: ya like jazz?'
+stderr 'panic: oh noes'
+stderr 'funcExported false funcUnexported false'
+stderr 'funcStructExported false funcStructUnexported false'
+-- go.mod --
+module test/main
+
+go 1.23
+-- garble_main.go --
+package main
+
+import (
+	"reflect"
+	"runtime"
+)
+
+type testStruct struct {}
+
+func (testStruct) unexportedFunc() { println("dummy") }
+
+func (testStruct) ExportedFunc() { println("dummy") }
+
+func ExportedFunc() { println("dummy") }
+
+func unexportedFunc() { println("dummy") }
+
+func isEmptyFuncName(i interface{}) bool {
+	name := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	return len(name) == 0
+}
+
+func main() {
+	println("funcExported", isEmptyFuncName(ExportedFunc), "funcUnexported", isEmptyFuncName(unexportedFunc))
+
+	var s testStruct
+	println("funcStructExported", isEmptyFuncName(s.ExportedFunc), "funcStructUnexported", isEmptyFuncName(s.unexportedFunc))
+
+	var v any = "tada"
+	println(v)
+
+	defer func() {
+		if r := recover(); r != nil {
+			println("recovered:", r.(string))
+			panic("oh noes")
+		}
+	}()
+
+	_, file, line, _ := runtime.Caller(0)
+	println("caller:", file, line)
+
+	panic("ya like jazz?")
+}

@@ -1,0 +1,136 @@
+# Unknown build flags should result in errors.
+! exec garble reverse -badflag=foo .
+stderr 'flag provided but not defined'
+
+exec garble build
+exec ./main
+cp stderr main.stderr
+
+# Ensure that the garbled panic output looks correct.
+# This output is not reproducible between 'go test' runs,
+# so we can't use a static golden file.
+grep 'goroutine 1 \[running\]' main.stderr
+# Note that ExportedLibMethod isn't obfuscated.
+# Note that we use long names like "long_lib.go",
+# because an obfuscated filename could realistically end with "lib".
+! grep 'ExportedLib(Type|Field)|unexportedMainFunc|test/main|long_main\.go|long_lib\.go' main.stderr
+
+stdin main.stderr
+exec garble reverse .
+cmp stdout reverse.stdout
+
+# Ensure that we cleaned up the temporary files.
+# Note that we rely on the unix-like TMPDIR env var name.
+[!windows] ! grepfiles ${TMPDIR} 'garble|importcfg|cache\.gob|\.go'
+
+[short] stop # no need to verify this with -short
+
+# Ensure that the reversed output matches the non-garbled output.
+go build -trimpath
+exec ./main
+cmp stderr reverse.stdout
+
+# Ensure that we can still reverse with -literals.
+exec garble -literals build
+exec ./main
+cp stderr main-literals.stderr
+
+stdin main-literals.stderr
+exec garble -literals reverse .
+cmp stdout reverse.stdout
+
+# Reversing a -literals output without the flag should fail.
+stdin main-literals.stderr
+! exec garble reverse .
+cmp stdout main-literals.stderr
+-- go.mod --
+module test/main
+
+go 1.23
+-- long_main.go --
+package main
+
+import (
+	"os"
+	"runtime"
+
+	"test/main/lib"
+)
+
+func main() {
+	unexportedMainFunc()
+
+	_, filename, _, _ := runtime.Caller(0)
+	println()
+	println("main filename:", filename)
+}
+
+func unexportedMainFunc() {
+	anonFunc := func() {
+		lt := lib.ExportedLibType{}
+		if err := lt.ExportedLibMethod(os.Stderr); err != nil {
+			panic(err)
+		}
+	}
+	anonFunc()
+}
+-- lib/long_lib.go --
+package lib
+
+import (
+	"bytes"
+	"io"
+	"regexp"
+	"runtime"
+	"runtime/debug"
+)
+
+type ExportedLibType struct{
+	ExportedLibField int
+}
+
+func (*ExportedLibType) ExportedLibMethod(w io.Writer) error {
+	_, filename, _, _ := runtime.Caller(0)
+	println("lib filename:", filename)
+	println()
+
+	return printStackTrace(w)
+}
+
+func printStackTrace(w io.Writer) error {
+	// Panic outputs include "0xNN" pointers and offsets which change
+	// between platforms.
+	// The format also changes depending on the ABI.
+	// Strip them out here, to have portable static stdout files.
+	rxCallArgs := regexp.MustCompile(`\(({|0x)[^)]+\)|\(\)`)
+	rxPointer := regexp.MustCompile(`\+0x[[:xdigit:]]+`)
+
+	// Keep this comment here, because comments affect line numbers.
+
+	stack := debug.Stack()
+	stack = rxCallArgs.ReplaceAll(stack, []byte("(...)"))
+	stack = rxPointer.ReplaceAll(stack, []byte("+0x??"))
+
+	// Drop the second and third lines, as they show a position in runtime/debug
+	// which can change between Go versions.
+	stackLines := bytes.Split(stack, []byte("\n"))
+	stackLines = append(stackLines[:1], stackLines[3:]...)
+	_, err := w.Write(bytes.Join(stackLines, []byte("\n")))
+	return err
+}
+-- reverse.stdout --
+lib filename: test/main/lib/long_lib.go
+
+goroutine 1 [running]:
+test/main/lib.printStackTrace(...)
+	test/main/lib/long_lib.go:33 +0x??
+test/main/lib.(*ExportedLibType).ExportedLibMethod(...)
+	test/main/lib/long_lib.go:20 +0x??
+main.unexportedMainFunc.func1(...)
+	test/main/long_main.go:21
+main.unexportedMainFunc(...)
+	test/main/long_main.go:25 +0x??
+main.main(...)
+	test/main/long_main.go:11 +0x??
+
+main filename: test/main/long_main.go

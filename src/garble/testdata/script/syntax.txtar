@@ -1,0 +1,277 @@
+exec garble build
+exec ./main$exe
+cmp stderr main.stderr
+
+! binsubstr main$exe 'localName' 'globalConst' 'globalVar' 'globalType' 'valuable information' 'private.source' 'remoteIntReturn' 'intReturn' 'neverInlined'
+
+[short] stop # no need to verify this with -short
+
+# Check that the program works as expected without garble.
+go build
+exec ./main$exe
+cmp stderr main.stderr
+
+binsubstr main$exe 'globalVar' # 'globalType' matches on some, but not all, platforms
+! binsubstr main$exe 'localName' 'globalConst' 'remoteIntReturn' 'intReturn'
+-- extra/go.mod --
+module private.source/extra
+
+go 1.23
+-- extra/extra.go --
+package extra
+
+func Func() string {
+	return "This is a separate module to obfuscate."
+}
+-- go.mod --
+module test/main
+
+go 1.23
+
+// We include an extra module to obfuscate, included in the same original source
+// code via a replace directive.
+require private.source/extra v0.0.0-00010101000000-000000000000
+
+replace private.source/extra => ./extra
+-- main.go --
+package main
+
+import (
+	"go/ast"
+	"runtime"
+
+	"private.source/extra"
+	"test/main/sub"
+)
+
+// This comment contains valuable information. Ensure it's not in the final binary.
+var V any
+
+type T struct {
+	ast.Node
+	*ast.Ident
+}
+
+type Embedded int
+
+type Embedding struct {
+	Embedded
+}
+
+type embedded int
+
+type embedding struct {
+	embedded
+}
+
+// embedded fields whose type is in the universe scope used to crash garble
+type EmbeddingUniverseScope struct {
+	error
+	int
+	string
+}
+
+// TODO: test that go:noinline still works without using debugdir
+
+func ensureInlined(wantInlined bool) {
+	pc := make([]uintptr, 1)
+	// We skip two caller frames; runtime.Callers, and ensureInlined.
+	// This way, the frame we get is our caller, like neverInlined.
+	n := runtime.Callers(2, pc)
+	if n == 0 {
+		panic("got zero callers?")
+	}
+	pc = pc[:n]
+
+	frames := runtime.CallersFrames(pc)
+
+	frame, _ := frames.Next()
+	gotInlined := frame.Func == nil
+	if wantInlined && !gotInlined {
+		panic("caller should be inlined but wasn't")
+	} else if !wantInlined && gotInlined {
+		panic("caller shouldn't be inlined but was")
+	}
+}
+
+//go:noinline
+func neverInlined() {
+	ensureInlined(false)
+	println("This func is never inlined.")
+}
+
+func alwaysInlined() {
+	ensureInlined(true)
+	println("This func is always inlined.")
+}
+
+type EmbeddingOuter struct {
+	EmbeddingInner
+}
+
+type EmbeddingInner struct {
+	SomeField int
+}
+
+func main() {
+	switch V := V.(type) {
+	case int:
+		var _ int = V
+	case nil:
+		println("nil case")
+	}
+
+	scopesTest()
+	println(extra.Func())
+	sub.Test()
+	neverInlined()
+	alwaysInlined()
+
+	_ = sub.EmbeddingExternalForeignAlias{
+		ExternalForeignAlias: nil,
+		Reader:       nil,
+	}
+
+	var emb sub.EmbeddingAlias
+	_ = emb.EmbeddedAlias
+	_ = emb.Foo
+	_ = emb.EmbeddedAliasSameName
+	_ = emb.Bar
+}
+
+-- scopes.go --
+package main
+
+const globalConst = 1
+
+type globalType int
+
+var (
+	globalVar                 = 1
+	globalVarTyped globalType = 1
+)
+
+func scopesTest() {
+	println(globalVar, globalConst, globalVarTyped)
+	const localNameConst = 1
+
+	localNameShort := 4
+
+	type localNameType int
+
+	var (
+		localNameVar                   = 5
+		localNameTypeVar localNameType = 1
+	)
+
+	println(localNameConst, localNameShort, localNameVar, localNameTypeVar, input("input"))
+}
+
+func input(localNameParam string) (localNameReturn string) { return localNameParam }
+
+-- sub/names.go --
+package sub
+
+import (
+	"io"
+
+	"test/main/external"
+)
+
+var someGlobalVar0 = "0"
+var someGlobalVar1 = "1"
+var someGlobalVar2 = "2"
+
+func Test() {
+	var A, B, C, D, E string
+	noop(A, B, C, D, E)
+	if someGlobalVar0 != "0" || someGlobalVar1 != "1" || someGlobalVar2 != "2"{
+		panic("name collision detected")
+	}
+}
+
+func noop(...any) {}
+
+// Funcs that almost look like test funcs used to make garble panic.
+
+func TestFoo(s string) {}
+
+func TestBar(*struct{}) {}
+
+// If we obfuscate the alias name, we must obfuscate its use here too.
+type EmbeddingAlias struct {
+	EmbeddedAlias
+	EmbeddedAliasSameName
+}
+
+type EmbeddedAlias = external.NamedExternal
+
+type EmbeddedAliasSameName = external.EmbeddedAliasSameName
+
+// We obfuscate the name foreignAlias, but not the name Reader,
+// as it's not declared in a private package.
+// Both names must do the same when used as struct fields,
+// both in the struct declaration and in the composite literal below.
+type embeddingForeignAlias struct {
+	foreignAlias
+	io.Reader
+}
+
+type foreignAlias = io.Reader
+
+var _ = embeddingForeignAlias{
+	foreignAlias: nil,
+	Reader: nil,
+}
+
+// Similar to embeddingForeignAlias,
+// but the alias is declared in a dependency,
+// and this type is used in a dependent.
+type EmbeddingExternalForeignAlias struct {
+	external.ExternalForeignAlias
+	io.Reader
+}
+
+// Like the cases above,
+// but this time the alias doesn't rename its destination named type.
+// We can't tell this apart from "struct { io.Reader }" at the type info level.
+// It's fine to ignore the alias entirely, in this case.
+type embeddingAliasSameName struct {
+	external.Reader
+}
+
+var _ = embeddingAliasSameName{
+	Reader: nil,
+}
+
+type embeddingBuiltinAlias struct {
+	byte
+}
+
+var _ = embeddingBuiltinAlias{3}
+var _ = embeddingBuiltinAlias{byte: 3}
+
+-- external/external.go --
+package external
+
+import "io"
+
+type NamedExternal struct {
+	Foo int
+}
+
+type EmbeddedAliasSameName struct {
+	Bar int
+}
+
+type ExternalForeignAlias = io.Reader
+
+type Reader = io.Reader
+
+-- main.stderr --
+nil case
+1 1 1
+1 4 5 1 input
+This is a separate module to obfuscate.
+This func is never inlined.
+This func is always inlined.

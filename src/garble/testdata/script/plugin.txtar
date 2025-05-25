@@ -1,0 +1,66 @@
+skip # TODO: get plugins working properly. See issue #87
+
+[windows] skip 'Go plugins are not supported on Windows'
+
+exec garble build -buildmode=plugin ./plugin
+binsubstr plugin.so 'PublicVar' 'PublicFunc'
+! binsubstr plugin.so 'privateFunc'
+
+# Note that we need -trimpath; see the caveat section in the README.
+go build -trimpath
+exec ./main
+cmp stderr main.stderr
+binsubstr main$exe 'PublicVar' 'PublicFunc'
+
+[short] stop # no need to verify this with -short
+
+# This used to fail, since in this case the package path for the ad-hoc plugin
+# package isn't "main", but "plugin/unnamed-*".
+exec garble build -buildmode=plugin plugin/main.go
+
+go build -buildmode=plugin ./plugin
+binsubstr plugin.so 'PublicVar' 'PublicFunc' 'privateFunc'
+go build
+exec ./main
+cmp stderr main.stderr
+-- go.mod --
+module test/main
+
+go 1.23
+-- plugin/main.go --
+package main
+
+import "test/main/plugin/lib"
+
+var PublicVar int = lib.ImportedFunc()
+
+func privateFunc(n int) { println("Hello, number", n) }
+
+func PublicFunc() { privateFunc(PublicVar) }
+-- plugin/lib/lib.go --
+package lib
+
+func ImportedFunc() int { return 4 }
+-- main.go --
+package main
+
+import "plugin"
+
+func main() {
+	p, err := plugin.Open("plugin.so")
+	if err != nil {
+		panic(err)
+	}
+	v, err := p.Lookup("PublicVar")
+	if err != nil {
+		panic(err)
+	}
+	f, err := p.Lookup("PublicFunc")
+	if err != nil {
+		panic(err)
+	}
+	*v.(*int) = 7
+	f.(func())()
+}
+-- main.stderr --
+Hello, number 7

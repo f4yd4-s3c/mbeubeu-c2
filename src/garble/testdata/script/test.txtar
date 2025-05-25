@@ -1,0 +1,154 @@
+# build the test binary
+exec garble test -c
+! stdout 'PASS'
+binsubstr bar.test$exe 'TestFoo' 'TestSeparateFoo'
+! binsubstr bar.test$exe 'LocalFoo|ImportedVar|OriginalFuncName'
+
+# run the tests; OriginalFuncName should be obfuscated
+exec ./bar.test -test.v
+stdout 'PASS.*TestFoo'
+stdout 'PASS.*TestSeparateFoo'
+stdout 'package bar, func name:'
+stdout 'package bar_test, func name:'
+! stdout 'OriginalFuncName'
+
+[short] stop # no need to verify this with -short
+
+# Also check that many packages test fine, including a main package and multiple
+# test packages.
+#
+# Exporttest is special, as it:
+#
+#  * uses an external test package
+#  * exports unexported APIs via export_test.go
+#  * is imported by another package, also tested via "./..."
+#
+# The combination of those used to result in "refusing to list non-dependency
+# package" errors, which we've currently worked around.
+exec garble test -v ./...
+stdout 'ok\s+test/bar\s'
+stdout 'PASS.*TestFoo'
+stdout 'PASS.*TestMain'
+stdout 'PASS.*TestSeparateFoo'
+stdout 'SKIP.*TestWithFlag'
+stdout 'package bar, func name:'
+stdout 'package bar_test, func name:'
+! stdout 'OriginalFuncName'
+stdout '\?\s+test/bar/somemain\s'
+stdout 'ok\s+test/bar/somemaintest\s'
+stdout 'ok\s+test/bar/sometest\s'
+stdout 'ok\s+test/bar/exporttest\s'
+
+# verify that non-build flags are kept
+exec garble test -withflag -v
+stdout 'PASS.*TestWithFlag'
+
+# verify with regular cmd/go; OriginalFuncName should appear
+go test -v
+stdout 'PASS.*TestFoo'
+stdout 'PASS.*TestSeparateFoo'
+stdout 'package bar, func name: test/bar\.OriginalFuncName'
+stdout 'package bar_test, func name: test/bar\.OriginalFuncName'
+-- go.mod --
+module test/bar
+
+go 1.23
+-- bar.go --
+package bar
+
+import "runtime"
+
+import _ "test/bar/exporttest"
+
+func LocalFoo() string { return "Foo" }
+
+var ImportedVar = "imported var value"
+
+// OriginalFuncName returns its own func name.
+func OriginalFuncName() string {
+	pc, _, _, _ := runtime.Caller(0)
+	fn := runtime.FuncForPC(pc)
+	return fn.Name()
+}
+-- bar_test.go --
+package bar
+
+import "testing"
+
+func TestFoo(t *testing.T) {
+	t.Log(ImportedVar)
+	if LocalFoo() != "Foo" {
+		t.FailNow()
+	}
+	t.Logf("package bar, func name: %s", OriginalFuncName())
+}
+-- bar_separate_test.go --
+package bar_test
+
+import (
+	"flag"
+	"testing"
+
+	"test/bar"
+)
+
+var withFlag = flag.Bool("withflag", false, "")
+
+func TestSeparateFoo(t *testing.T) {
+	t.Log(bar.ImportedVar)
+	if bar.LocalFoo() != "Foo" {
+		t.FailNow()
+	}
+	t.Logf("package bar_test, func name: %s", bar.OriginalFuncName())
+}
+
+func TestWithFlag(t *testing.T) {
+	if !*withFlag {
+		t.Skip()
+	}
+}
+-- main_test.go --
+package bar
+
+import (
+	"os"
+	"testing"
+)
+
+func TestMain(m *testing.M) {
+	os.Exit(m.Run())
+}
+-- somemain/main.go --
+package main
+
+func main() {}
+-- somemaintest/main.go --
+package main
+
+func main() {}
+-- somemaintest/main_test.go --
+package main
+
+import "testing"
+
+func TestMain(t *testing.T) {}
+-- sometest/foo_test.go --
+package sometest
+
+import "testing"
+
+func TestFoo(t *testing.T) {}
+-- exporttest/foo.go --
+package exporttest
+
+type foo int
+-- exporttest/export_test.go --
+package exporttest
+
+type Foo = foo
+-- exporttest/foo_test.go --
+package exporttest_test
+
+import "testing"
+
+func TestFoo(t *testing.T) {}

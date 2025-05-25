@@ -1,0 +1,518 @@
+exec garble -literals build
+exec ./main$exe
+cmp stderr main.stderr
+
+binsubstr main$exe 'skip typed const' 'skip typed var' 'skip typed var assign' 'stringTypeField strType' 'stringType lambda func return' 'testMap2 key' 'testMap3 key' 'testMap1 value' 'testMap3 value' 'testMap1 new value' 'testMap3 new value' 'stringType func param' 'stringType return' 'skip untyped const' 'sz<min'
+! binsubstr main$exe 'garbleDecrypt' 'Lorem Ipsum' 'dolor sit amet' 'first assign' 'second assign' 'First Line' 'Second Line' 'secret map value' 'obfuscated with shadowed builtins' '1: literal in' 'an secret array' '2: literal in' 'a secret slice' 'to obfuscate' 'also obfuscate' 'stringTypeField String' 'testMap1 key' 'Obfuscate this block' 'also obfuscate this'
+
+[short] stop # checking that the build is reproducible is slow
+
+# Also check that the binary is reproducible.
+cp main$exe main_old$exe
+rm main$exe
+exec garble -literals build
+bincmp main$exe main_old$exe
+
+# Check that the program works as expected without garble.
+go build
+exec ./main$exe
+cmp stderr main.stderr
+binsubstr main$exe 'Lorem Ipsum' 'dolor sit amet' 'second assign' 'First Line' 'Second Line' 'secret map value' 'obfuscated with shadowed builtins' '1: literal in' 'an secret array' '2: literal in' 'a secret slice' 'to obfuscate' 'also obfuscate' 'stringTypeField String' 'testMap1 key' 'Obfuscate this block' 'also obfuscate this'
+
+# Generate and write random literals into a separate file.
+# Some of them will be huge; assuming that we don't try to obfuscate them, the
+# test should generally run in under a second. If this test hangs for over ten
+# seconds, it means we're trying to obfuscate them.
+generate-literals extra_literals.go
+
+# ensure we find the extra literals in an unobfuscated build
+go build
+binsubstr main$exe 'a_unique_string_that_is_part_of_all_extra_literals'
+
+# ensure we don't find the extra literals in an obfuscated build
+exec garble -literals -debugdir=debug1 build
+exec ./main$exe
+cmp stderr main.stderr
+! binsubstr main$exe 'a_unique_string_that_is_part_of_all_extra_literals'
+
+# Check obfuscators.
+
+# Xor obfuscator. Detect a[i] = a[i] (^|-|+) b[i]
+grep '^\s+\w+\[\w+\] = \w+\[\w+\] [\^\-+] \w+$' debug1/test/main/extra_literals.go
+
+# Swap obfuscator. Detect [...]byte|uint16|uint32|uint64{...}
+grep '^\s+\w+ := \[\.{3}\](byte|uint16|uint32|uint64)\{[0-9\s,]+\}$' debug1/test/main/extra_literals.go
+
+# Split obfuscator. Detect decryptKey ^= i * counter
+grep '^\s+\w+ \^= \w+ \* \w+$' debug1/test/main/extra_literals.go
+
+# XorShuffle obfuscator. Detect data = append(data, x[? ^ idxKey[?]] (^|-|+) y[? ^ idxKey[?]]...).
+# Note that the line obfuscator adds an inline comment before the call.
+grep '^(\s+)?\w+ = .*\bappend\(\w+,(\s+\w+\[\d+\^\s.+\][\^\-+]\w+\[\d+\^\s.+\],?)+\)$' debug1/test/main/extra_literals.go
+
+# XorSeed obfuscator. Detect type decFunc func(byte) decFunc
+grep '^\s+type \w+ func\(byte\) \w+$' debug1/test/main/extra_literals.go
+
+# Finally, sanity check that we can build all of std with -literals.
+# Analogous to gogarble.txt.
+exec garble -literals build std
+-- go.mod --
+module test/main
+
+go 1.23
+-- main.go --
+package main
+
+import (
+	_ "runtime/debug"
+
+	"test/main/imp"
+	. "test/main/imp_const"
+	. "test/main/imp_func"
+	. "test/main/imp_var"
+	. "test/main/imp_type"
+	. "test/main/imp_struct"
+)
+
+type structTest struct {
+	field        string
+	anotherField string
+}
+
+const (
+	cnst      string = "Lorem Ipsum"
+	multiline string = `First Line
+Second Line`
+)
+
+const (
+	i       = 1
+	boolean = true
+
+	mixedBlock = "Obfuscate this block"
+)
+
+const (
+	foo = iota
+	bar
+
+	iotaBlock = "also obfuscate this"
+)
+
+// We used to conver this to a var in an attempt of obfuscating the literal.
+// That would break the iota, which only works inside const declarations.
+// We only obfuscate constant declarations with string values, anyway.
+const fooTyped uint64 = 1 << iota
+
+const arrayLen = 4
+
+var array [arrayLen]byte
+
+type typeAlias [arrayLen]byte
+
+func main() {
+	empty := ""
+	tooSmall := "sz<min"
+
+	localVar := "dolor sit amet"
+
+	reassign := "first assign"
+	reassign = "second assign"
+
+	add := "totally long" + "unnecessarily added string"
+
+	println(cnst, boolean)
+	println(multiline, add)
+	println(localVar)
+	println(reassign)
+	println(empty)
+	println(tooSmall)
+
+	x := structTest{
+		field:        "to obfuscate",
+		anotherField: "also obfuscate",
+	}
+
+	lambda := func() string {
+		return "happy faces 😅 😅"
+	}()
+	println(lambda)
+
+	println(x.field, x.anotherField)
+
+	testMap := map[string]string{"secret map key": "secret map value"}
+	testMap["secret map key"] = "secret new value"
+	println(testMap["secret map key"])
+	println("another literal")
+	println(mixedBlock, iotaBlock)
+	println(i, foo, bar)
+	typedTest()
+	constantTest()
+	byteTest()
+	shadowTest()
+	dotImportTest()
+	multipleTimeImportTest()
+
+	strArray := [2]string{"1: literal in", "an secret array"}
+	println(strArray[0], strArray[1])
+	strSlice := []string{"2: literal in", "a secret slice"}
+	println(strSlice[0], strSlice[1])
+	emptyStrSlice := []string{""}
+	print(emptyStrSlice[0])
+}
+
+type stringType string
+
+type stringTypeStruct struct {
+	str     string
+	strType stringType
+}
+
+// typedTest types defined from string broke previously
+func typedTest() {
+	const skipUntypedConst = "skip untyped const"
+	stringTypeFunc(skipUntypedConst)
+
+	const skipTypedConst stringType = "skip typed const" // skip
+	var skipTypedVar stringType = "skip typed var"       // skip
+
+	var skipTypedVarAssign stringType
+	skipTypedVarAssign = "skip typed var assign" // skip
+
+	println(skipTypedConst, skipTypedVar, skipTypedVarAssign)
+
+	y := stringTypeStruct{
+		str:     "stringTypeField String",  // obfuscate
+		strType: "stringTypeField strType", // skip
+	}
+	println(y.str, y.strType)
+
+	z := func(s stringType) stringType {
+		return "stringType lambda func return" // skip
+	}("lambda call") // skip
+	println(z)
+
+	testMap1 := map[string]stringType{"testMap1 key": "testMap1 value"} // skip
+	testMap1["testMap1 key"] = "testMap1 new value"                     // skip
+
+	testMap2 := map[stringType]string{"testMap2 key": "testMap2 value"} // skip key
+	testMap2["testMap2 key"] = "testMap2 new value"                     // skip key
+
+	testMap3 := map[stringType]stringType{"testMap3 key": "testMap3 value"} // skip
+	testMap3["testMap3 key"] = "testMap3 new value"                         // skip
+
+	println(stringTypeFunc("stringType func param")) // skip
+}
+
+// constantTest tests that string constants which need to be constant are skipped
+func constantTest() {
+	const a = "foo bar bar" // skip
+	const length = len(a)
+
+	const b = "bar foo foo" // skip
+	type T [len(b)]byte
+
+	const c = "foo bar bar" // skip
+	var _ [len(c)]byte
+
+	const d = "foo bar bar" // skip
+	var arr = [12]string{len(d): "foo bar bar"}
+	for _, elm := range arr {
+		if elm != "" {
+			println(elm)
+		}
+	}
+
+	const e = "foo bar bar" // skip
+	var slice = []string{len(e): "foo bar bar"}
+	for _, elm := range slice {
+		if elm != "" {
+			println(elm)
+		}
+	}
+
+	const f = "foo bar bar" // skip
+	const i = length + len(f)
+	println(length, i)
+
+	// We should still obfuscate ImportedType here.
+	// Otherwise, the build will fail,
+	// as the name was obfuscated in the original package.
+	const impType = imported.ImportedType(3)
+}
+
+// TODO: This only tests that we don't break byte slices.
+// It was manually verified that they do get obfuscated,
+// The original bytes don't seem to show up in the binary,
+// meaning that we can't test for them via binsubstr.
+// We should figure out a way to test for the byte sequences.
+// For now, we manually tested these when they got added.
+func byteTest() {
+	a := []byte{12, 13, 12, 13, 12, 13, 12, 13, 12, 13}
+	for _, elm := range a {
+		print(elm, ",")
+	}
+	println()
+	var b = []byte{12, 13, 12, 13, 12, 13, 12, 13, 12, 13}
+	for _, elm := range b {
+		print(elm, ",")
+	}
+	println()
+
+	var c = [10]byte{12, 13, 12, 13, 12, 13, 12, 13, 12, 13}
+	for _, elm := range c {
+		print(elm, ",")
+	}
+	println()
+
+	d := func() [12]byte {
+		return [12]byte{12, 13, 12, 13, 12, 13, 12, 13, 12, 13}
+	}()
+	for _, elm := range d {
+		print(elm, ",")
+	}
+	println()
+
+	e := []byte{0x43, 11_1, 0b01101101, 'p', 'l', 'e', 'x', ' ', 'l', 'i', 't'}
+	println(string(e))
+
+	// Testing for issue #520.
+	func(s []byte) {
+		print(string(s))
+	}([]byte("big chungus"))
+	println()
+
+	func(s *[]byte) {
+		print(string(*s))
+	}(&[]byte{99, 104, 117, 110, 103, 117, 115, '!', '!'})
+	println()
+
+	func(s [9]byte) {
+		for _, elm := range s {
+			print(elm, ",")
+		}
+	}([9]byte{99, 104, 117, 110, 103, 117, 115, 117, 115})
+	println()
+
+	func(s *[9]byte) {
+		for _, elm := range s {
+			print(elm, ",")
+		}
+	}(&[9]byte{99, 104, 117, 110, 103, 117, 115, 117, 115})
+	println()
+}
+
+func stringTypeFunc(s stringType) stringType {
+	println(s)
+	return "stringType return" // skip
+}
+
+// obfuscating this broke before
+const (
+	iota0 uint8 = iota
+	iota1
+)
+
+// Our inserted code used to break due to the shadowed builtins.
+// The name "fnc" is used as a func var name in garble's inserted code.
+func shadowTest() {
+	{
+		var append, bool, string, fnc int
+		_, _, _, _ = append, bool, string, fnc
+
+		println("obfuscated with shadowed builtins (vars)")
+	}
+	{
+		type append int
+		type bool int
+		type string int
+		type fnc int
+
+		println("obfuscated with shadowed builtins (types)")
+	}
+}
+
+func dotImportTest() {
+    println(DotImportedStr)
+    println(DotImportedFunc())
+    println(DotImportedVar)
+    println(DotImportedType("str as dot imported type"))
+    println(DotImportedStruct.Str)
+}
+
+func multipleTimeImportTest() {
+    regularAndUnusedRenamed()
+    regularAndUnusedDotImport()
+    unusedRegularAndDotImport()
+}
+
+func noop(...any) {}
+
+-- regular_and_unused_renamed.go --
+package main
+
+import (
+    "test/main/imp_mult"
+    imp_mult2 "test/main/imp_mult"
+)
+
+func regularAndUnusedRenamed() {
+    imp_mult.MultDummy()
+    noop(imp_mult.MultImpStr, imp_mult2.MultImpStr)
+}
+
+-- regular_and_unused_dotimport.go --
+package main
+
+import (
+    "test/main/imp_mult"
+    . "test/main/imp_mult"
+)
+
+func regularAndUnusedDotImport() {
+    imp_mult.MultDummy()
+    noop(imp_mult.MultImpStr, MultImpStr)
+}
+
+-- unused_regular_and_dotimport.go --
+package main
+
+import (
+    "test/main/imp_mult"
+    . "test/main/imp_mult"
+)
+
+func unusedRegularAndDotImport() {
+    MultDummy()
+    noop(imp_mult.MultImpStr, MultImpStr)
+}
+
+-- imp/imported.go --
+package imported
+
+type ImportedType int
+-- imp_const/imported.go --
+package imp_const
+
+const DotImportedStr = "const str from dot imported var"
+
+-- imp_func/imported.go --
+package imp_func
+
+func DotImportedFunc() string {
+	return "str from dot imported func"
+}
+
+-- imp_var/imported.go --
+package imp_var
+
+var DotImportedVar = "str from dot imported var"
+
+-- imp_type/imported.go --
+package imp_type
+
+type DotImportedType string
+
+-- imp_struct/imported.go --
+package imp_struct
+
+var DotImportedStruct = struct{ Str string }{Str: "string in dot imported struct"}
+
+-- imp_mult/imported.go --
+package imp_mult
+
+const MultImpStr = "str from package imported multiple time"
+
+func MultDummy() {}
+
+-- directives.go --
+// If we misplace any of the directives below,
+// cmd/compile will complain with "misplaced compiler directive".
+//
+// We use many literals and functions, mixing different types,
+// so that it's more likely that bugs will be caught.
+package main
+
+//go:noinline
+func str0() { println("foo bar bar") }
+
+//go:noinline
+func str1() { println("foo bar bar") }
+
+//go:noinline
+func str2() { println("foo bar bar") }
+
+//go:noinline
+func str3() { println("foo bar bar") }
+
+//go:noinline
+func str4() { println("foo bar bar") }
+
+//go:noinline
+func arr0() { println(len([...]byte{0, 1, 2, 3, 4, 5, 6, 7, 8})) }
+
+//go:noinline
+func arr1() { println(len([...]byte{0, 1, 2, 3, 4, 5, 6, 7, 8})) }
+
+//go:noinline
+func slc0() { println([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8}) }
+
+//go:noinline
+func slc1() { println([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8}) }
+
+//go:noinline
+func str5() { println("foo bar bar") }
+
+//go:noinline
+func str6() { println("foo bar bar") }
+
+//go:noinline
+func str7() { println("foo bar bar") }
+
+//go:noinline
+func str8() { println("foo bar bar") }
+
+//go:noinline
+func str9() { println("foo bar bar") }
+
+-- main.stderr --
+Lorem Ipsum true
+First Line
+Second Line totally longunnecessarily added string
+dolor sit amet
+second assign
+
+sz<min
+happy faces 😅 😅
+to obfuscate also obfuscate
+secret new value
+another literal
+Obfuscate this block also obfuscate this
+1 0 1
+skip untyped const
+skip typed const skip typed var skip typed var assign
+stringTypeField String stringTypeField strType
+stringType lambda func return
+stringType func param
+stringType return
+foo bar bar
+foo bar bar
+11 22
+12,13,12,13,12,13,12,13,12,13,
+12,13,12,13,12,13,12,13,12,13,
+12,13,12,13,12,13,12,13,12,13,
+12,13,12,13,12,13,12,13,12,13,0,0,
+Complex lit
+big chungus
+chungus!!
+99,104,117,110,103,117,115,117,115,
+99,104,117,110,103,117,115,117,115,
+obfuscated with shadowed builtins (vars)
+obfuscated with shadowed builtins (types)
+const str from dot imported var
+str from dot imported func
+str from dot imported var
+str as dot imported type
+string in dot imported struct
+1: literal in an secret array
+2: literal in a secret slice
