@@ -73,11 +73,19 @@ While **MBEUBEU** is not yet feature-complete and doesn't aim to compete directl
   - Parrot OS
 
 ## 🧪 Installation Steps
-1. **Clone the repo**
+0. ```bash
+   git clone https://github.com/f4yd4-s3c/mbeubeu-c2.git
+   cd mbeubeu-c2
+   bash install.sh
+
+1. **If you already have Go version ≥ 1.23.0 and pip3 installed**
    ```bash
    git clone https://github.com/f4yd4-s3c/mbeubeu-c2.git
    cd mbeubeu-c2
-   bash install.sh  
+   chmod +x src/garble/garble
+   go mod tidy
+     
+⚙️ **Please make sure to install all requirements before starting the C2.**
 
 📝 **Official Docs:** [https://f4yd4-s3c.github.io/](https://f4yd4-s3c.github.io/)
 ---
