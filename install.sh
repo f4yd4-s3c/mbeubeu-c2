@@ -5,8 +5,7 @@ set -e
 GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
-NC='\033[0m' # No Color
-
+NC='\033[0m' 
 SHELL_NAME=$(basename "$SHELL")
 CONFIG_FILE="$HOME/.${SHELL_NAME}rc"
 
@@ -64,14 +63,6 @@ fi
 echo -e "${BLUE}[i] Verifying Go installation...${NC}"
 go version
 
-cd src/garble
-
-echo -e "${BLUE}[i] Building Garble...${NC}"
-go build .
-
-cd "$cdirect"
-
-# Tidy Go modules
 if [ -f "go.mod" ]; then
     echo -e "${YELLOW}[+] Tidying Go modules...${NC}"
     go mod tidy
@@ -79,6 +70,5 @@ else
     echo -e "${YELLOW}[!] Skipping 'go mod tidy': no go.mod found in current directory.${NC}"
 fi
 
-# Done
 echo -e "${GREEN}[✓] Setup completed successfully.${NC}"
 echo -e "${BLUE}[i] You can now run the teamserver using:${NC} ${YELLOW}sudo ./mbeubeu-teamserver -h${NC}"
