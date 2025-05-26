@@ -120,7 +120,7 @@ Contributions, issues, and pull requests are welcome! Feel free to fork, modify,
 ## follow me on :
 [linkedin](https://linkedin.com/in/p4p4m4n3)  
 
-[twitter](https://twitter.com/in/p4p4m4n3)  
+[twitter](https://x.com/P4p4M4n3)  
 
 **For sponsorship or service inquiries, please contact mane.papa@outlook.com.**
 
