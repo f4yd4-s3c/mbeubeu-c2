@@ -83,6 +83,8 @@ While **MBEUBEU** is not yet feature-complete and doesn't aim to compete directl
    git clone https://github.com/f4yd4-s3c/mbeubeu-c2.git
    cd mbeubeu-c2
    chmod +x src/garble/garble
+   chmod +x mbeubeu-client
+   chmod +x mbeubeu-teamserver
    go mod tidy
      
 ⚙️ **Please make sure to install all requirements before starting the C2.**
