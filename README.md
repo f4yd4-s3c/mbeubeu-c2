@@ -73,10 +73,11 @@ While **MBEUBEU** is not yet feature-complete and doesn't aim to compete directl
   - Parrot OS
 
 ## 🧪 Installation Steps
+**Dont forget to change '#!/bin/bash' to '#!/bin/zsh' if you are using zsh in the install.sh file.Do echo $SHELL to know which shell are you using**
 0. ```bash
    git clone https://github.com/f4yd4-s3c/mbeubeu-c2.git
    cd mbeubeu-c2
-   bash install.sh
+   ./install.sh
 
 1. **If you already have Go version ≥ 1.23.0 and pip3 installed**
    ```bash
