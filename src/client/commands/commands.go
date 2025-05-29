@@ -54,18 +54,18 @@ func HelpMenu() {
   %swhoami%s                       - Print current user
   %spwd%s                          - Print working directory
   %scat <file>%s                   - Display file contents
-  %sdownload <remote> [local]%s    - Download file from bayefall
-  %supload  <local> [remote]%s     - Upload file to bayefall
+  %sdownload <remote> %s           - Download file from bayefall
+  %supload  <local>%s              - Upload file to bayefall
   %shashdump%s                     - Dump SAM hashes
   %srunas <user> <pass> <cmd>%s    - Execute as different user
-  %swinrm <target> <command>%s     - Execute via WinRM
+  %swinrm <help>%s                 - Execute via WinRM
   %sjump-psexec <target>%s         - Lateral move via PSExec. Example: jump-psexec srv01.lab01.local https_listener 
   %sdefence-analysis%s             - Defense analysis
   %sinfo%s                         - Get system information
   %sGet-*/Set-*%s                  - *SharpView commands
   %sList-Drivers%s                 - Enumerate loaded drivers
-  %sexecute-assembly <path>%s      - Execute .NET assembly in-memory
-  %smaketoken <flags>%s            - Create impersonation token
+  %sexecute-assembly <lfile>%s     - Execute .NET assembly in-memory
+  %smaketoken <help>%s             - Create impersonation token
   %sgetprivs%s                     - Enable privileges
   %srevtoself%s                    - Revert to original token
   %soffice_infect <path>%s         - Inject VBA into Office docs. Example: office_infect /local/path/to/vbaProject.bin
@@ -73,6 +73,11 @@ func HelpMenu() {
   %ssocks <addr> <port>%s          - Start SOCKS5 proxy
   %sstop-socks%s                   - Terminate SOCKS proxy
   %sscreenshot%s                   - Capture desktop screenshot
+  %sport_scan <hostIP>%s           - Port scan
+  %srm <file>%s                    - Remove file
+  %smv <file1> <file2>%s           - Move / Rename file
+  %smkdir <dir name>%s             - Make directory
+  %scp <file>%s                    - Copy file
   %ssmart_shot%s                   - Stealth screenshot capture. Example: smart_shot titles.txt 5000
   %spwsh-import <script>%s         - Import PowerShell module
   %spwsh-execute <command>%s       - Execute imported module command
@@ -98,6 +103,11 @@ func HelpMenu() {
   %scat <file>%s                   - Display file contents
   %sdownload <remote> [local]%s    - Download file from bayefall
   %supload  <local> [remote]%s     - Upload file to bayefall
+  %sport_scan <hostIP>%s           - Port scan
+  %srm <file>%s                    - Remove file
+  %smv <file1> <file2>%s           - Move / Rename file
+  %smkdir <dir name>%s             - Make directory
+  %scp <file>%s                    - Copy file
   %slcmd%s                         - Execute local command
   %shelp%s                         - Show this help message
 
@@ -156,6 +166,11 @@ func HelpMenu() {
 		colorCyan, colorReset, // socks
 		colorCyan, colorReset, // stop-socks
 		colorCyan, colorReset, // screenshot
+		colorCyan, colorReset, // portscan
+		colorCyan, colorReset, // rm
+                colorCyan, colorReset, // mv
+                colorCyan, colorReset, // mkdir
+                colorCyan, colorReset, // cp
 		colorCyan, colorReset, // smart_shot
 		colorCyan, colorReset, // pimport
 		colorCyan, colorReset, // pexecute
@@ -181,6 +196,11 @@ func HelpMenu() {
                 colorCyan, colorReset, 
                 colorCyan, colorReset, 
                 colorCyan, colorReset, 
+		colorCyan, colorReset,
+                colorCyan, colorReset,
+                colorCyan, colorReset,
+                colorCyan, colorReset,
+                colorCyan, colorReset,
 		colorCyan, colorReset, //lcmd
 		colorCyan, colorReset,
 
@@ -214,6 +234,10 @@ var AutoCompleteCommands = []string{
     
     // File operations
     "download",
+    "mkdir",
+    "cp",
+    "mv",
+    "rm",
     "upload",
     "List-Drivers",
     "office_infect",
