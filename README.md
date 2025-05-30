@@ -86,6 +86,7 @@ While **MBEUBEU** is not yet feature-complete and doesn't aim to compete directl
    chmod +x src/garble/garble
    chmod +x mbeubeu-client
    chmod +x mbeubeu-teamserver
+   sudo apt install -y upx-ucl
    pip3 install --user filetype
    go mod tidy
      
