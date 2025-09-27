@@ -56,7 +56,7 @@ func isWindowOpen(target string) (bool, Rect) {
 			return 1 // continue enumeration
 		}
 
-		// Get window title
+		// Get window title 
 		var buf [256]uint16
 		procGetWindowTextW.Call(
 			uintptr(hwnd),
