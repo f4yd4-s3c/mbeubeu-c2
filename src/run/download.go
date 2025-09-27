@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"path/filepath"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -57,7 +58,7 @@ func UploadFile(filename string, url string, token string, userAgent string) err
 	writer := multipart.NewWriter(body)
 
 	// Create form file field
-	part, err := writer.CreateFormFile("file", filename)
+	part, err := writer.CreateFormFile("file", filepath.Base(filename))
 	if err != nil {
 		return err
 	}
