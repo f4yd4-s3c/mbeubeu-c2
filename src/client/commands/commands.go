@@ -44,48 +44,46 @@ func HelpMenu() {
   %sjitter <second>%s              - Jitter default 0	
   %sshell <command>%s              - Execute Shell command
   %spwsh <command>%s               - Execute PowerShell command
-  %spwsh-bypass <command>%s        - Bypass AMSI/ETW with PowerShell
   %sps%s                           - List running processes
   %sbof_execute%s                  - Execute beacon object file
   %skill -y%s                      - Terminate bayefall process
-  %ssc-spawn <.bin_Path>%s         - Shellcode injection
-  %sls [path]%s                    - List directory contents
+  %ssc-spawn <.bin_Path>%s         - Remote Proc injection.Process to inject will be choise randomly
+  %sls %s                          - List directory contents
   %scd <path>%s                    - Change current directory  
   %swhoami%s                       - Print current user
   %spwd%s                          - Print working directory
   %scat <file>%s                   - Display file contents
-  %sdownload <remote> %s           - Download file from bayefall
-  %supload  <local>%s              - Upload file to bayefall
-  %shashdump%s                     - Dump SAM hashes
-  %srunas <user> <pass> <cmd>%s    - Execute as different user
+  %sdownload <rfile> %s            - Download file from bayefall
+  %supload  <lfile>%s              - Upload file to bayefall
+  %sbof_execute <help> %s          - Execute Beacon Object File
+  %shashdump%s                     - Dump SAM hashes / Need SYSTEM 
+  %srunas <user> <pass> <cmd>%s    - Execute as different user 
   %swinrm <help>%s                 - Execute via WinRM
-  %sjump-psexec <target>%s         - Lateral move via PSExec. Example: jump-psexec srv01.lab01.local https_listener 
+  %sjump-psexec <target> <lstn>%s  - Lateral move via PSExec. Example: jump-psexec srv01.lab01.local https_listener / smb listener will be available soon.
   %sdefence-analysis%s             - Defense analysis
   %sinfo%s                         - Get system information
-  %sGet-*/Set-*%s                  - *SharpView commands
+  %sGet-*/Set-*%s                  - *SharpView commands 
   %sList-Drivers%s                 - Enumerate loaded drivers
-  %sexecute-assembly <lfile>%s     - Execute .NET assembly in-memory
-  %smaketoken <help>%s             - Create impersonation token
-  %sgetprivs%s                     - Enable privileges
+  %sexecute-assembly <.NET-File>%s - Execute .NET assembly in-memory
+  %smaketoken <help>%s             - Create impersonation token 
   %srevtoself%s                    - Revert to original token
   %soffice_infect <path>%s         - Inject VBA into Office docs. Example: office_infect /local/path/to/vbaProject.bin
   %susb_infect%s                   - Create malicious USB trigger. Example: usb_infect Ndobin.exe invoice.docx NoSuspectName 60
-  %ssocks <addr> <port>%s          - Start SOCKS5 proxy
+  %ssocks <port>%s                 - Start SOCKS5 proxy
   %sstop-socks%s                   - Terminate SOCKS proxy
   %sscreenshot%s                   - Capture desktop screenshot
-  %sport_scan <hostIP>%s           - Port scan
+  %sport_scan <Host-IP>%s          - Port scan 
   %srm <file>%s                    - Remove file
   %smv <file1> <file2>%s           - Move / Rename file
-  %smkdir <dir name>%s             - Make directory
+  %smkdir <dir_name>%s             - Make directory
   %scp <file>%s                    - Copy file
   %ssmart_shot%s                   - Stealth screenshot capture. Example: smart_shot titles.txt 5000
   %spwsh-import <script>%s         - Import PowerShell module
   %spwsh-execute <command>%s       - Execute imported module command
-  %spwsh-bypass%s                  - Run powershell command tat bypass amsi and etw.
-  %spersist_startup%s              - Startup persistence
-  %spersist_registryrun%s          - Registry run persistence
-  %spersist_schtask%s              - Scheduled task persistence
-  %spersist_winlogon%s             - Winlogon persistence
+  %spersist_startup user|system%s  - Startup persistence
+  %spersist_registryrun user|sys%s - Registry run persistence
+  %spersist_schtask user|system%s  - Scheduled task persistence
+  %spersist_winlogon user|system%s - Winlogon persistence
   %slcmd%s                         - Execute local command
   %shelp%s                         - Show this help message
 
@@ -139,6 +137,7 @@ func HelpMenu() {
 		colorCyan, colorReset, // pwsh
 		colorCyan, colorReset, // ps
 		colorCyan, colorReset, // bof
+		colorCyan, colorReset,
 		colorCyan, colorReset, // kill
 		colorCyan, colorReset, // spawn
 		colorCyan, colorReset, // ls
@@ -149,7 +148,6 @@ func HelpMenu() {
 		colorCyan, colorReset, // download
 		colorCyan, colorReset, // uploadf
 		colorCyan, colorReset, // hashdump
-		colorCyan, colorReset, // GigiSamDump
 		colorCyan, colorReset, // runas
 		colorCyan, colorReset, // winrm
 		colorCyan, colorReset, // jump-psexec
@@ -159,7 +157,6 @@ func HelpMenu() {
 		colorCyan, colorReset, // List-Drivers
 		colorCyan, colorReset, // execute-assembly
 		colorCyan, colorReset, // maketoken
-		colorCyan, colorReset, // getprivs
 		colorCyan, colorReset, // revtoself
 		colorCyan, colorReset, // office_infect
 		colorCyan, colorReset, // usb_infect
@@ -174,7 +171,6 @@ func HelpMenu() {
 		colorCyan, colorReset, // smart_shot
 		colorCyan, colorReset, // pimport
 		colorCyan, colorReset, // pexecute
-		colorCyan, colorReset, // pwsh-bypass
 		colorCyan, colorReset, //persist
 		colorCyan, colorReset, //persist
 		colorCyan, colorReset, //persist
@@ -225,7 +221,6 @@ var AutoCompleteCommands = []string{
     "pwsh",
     "sleep",
     "jitter",
-    "pwsh-bypass",
     "pwd",
     "ls",
     "cat",
@@ -262,7 +257,7 @@ var AutoCompleteCommands = []string{
     "pwsh-import",
     "winrm",
     "persist_startup",
-    "persist_resgistryrun",
+    "persist_registryrun",
     "persist_schtask",
     "persist_winlogon",
     
@@ -420,6 +415,7 @@ func GetAutoCompleter() *readline.PrefixCompleter {
                 readline.PcItem("enum_domaingroupmembers"),
                 readline.PcItem("enum_arpscan"),
                 readline.PcItem("enum_services"),
+		readline.PcItem("enum_azure_ad_joininfo"),
                 readline.PcItem("enum_firewallrules"),
                 readline.PcItem("enum_routeprint"),
                 readline.PcItem("enum_sessioninfo"),
@@ -428,11 +424,34 @@ func GetAutoCompleter() *readline.PrefixCompleter {
                 readline.PcItem("enum_ipconfig"),
                 readline.PcItem("enum_netstat"),
                 readline.PcItem("enum_adcs"),
+		readline.PcItem("enum_resources"),
+		readline.PcItem("enum_notepad"),
+		readline.PcItem("enum_env"),
+		readline.PcItem("enum_listdns"),
                 readline.PcItem("priv_unquoted"),
-                readline.PcItem("priv_autologon"),
                 readline.PcItem("priv_modifiableautorun"),
                 readline.PcItem("priv_tokenprivileges"),
                 readline.PcItem("priv_alwaysinstallelevated"),
+		readline.PcItem("rubeus_asktgs"),
+                readline.PcItem("rubeus_asreproasting"),
+                readline.PcItem("rubeus_cross_s4u"),
+                readline.PcItem("rubeus_dump"),
+                readline.PcItem("rubeus_kerberoasting"),
+                readline.PcItem("rubeus_ptt"),
+                readline.PcItem("rubeus_renew"),
+                readline.PcItem("rubeus_tgtdeleg"),
+                readline.PcItem("rubeus_changepw"),
+                readline.PcItem("rubeus_describe"),
+                readline.PcItem("rubeus_hash"),
+                readline.PcItem("rubeus_klist"),
+                readline.PcItem("rubeus_purge"),
+                readline.PcItem("rubeus_s4u"),
+                readline.PcItem("rubeus_triage"),
+                readline.PcItem("rubeus_asktgt"),
+                readline.PcItem("askcreds"),
+                readline.PcItem("autologon"),
+                readline.PcItem("credman"),
+                readline.PcItem("hashdump"),
 
 
             )
