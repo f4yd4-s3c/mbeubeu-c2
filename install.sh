@@ -23,7 +23,7 @@ chmod +x mbeubeu-client
 # Install Python and pip
 echo -e "${YELLOW}[+] Installing Python and pip...${NC}"
 sudo apt install -y python3 python3-pip
-pip3 install --user filetype
+pip3 install --user filetype --break-system-packages
 
 INSTALL_GO=false
 REQUIRED_GO_VERSION="1.24.0"
