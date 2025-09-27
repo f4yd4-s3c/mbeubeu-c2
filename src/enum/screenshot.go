@@ -49,5 +49,6 @@ func DeleteTempFile(tempFile string) {
                 //return err
         }
         fmt.Println("Temporary screenshot deleted")
+        //return nil
 }
 
